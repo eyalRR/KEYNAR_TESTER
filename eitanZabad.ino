@@ -31,8 +31,11 @@ LiquidCrystal_I2C lcd(0x27, 16, 2); // set the LCD address to 0x27 for a 16 char
 
 
 // Pin defenitions
-const int triggerPin = 3;  // The pin for the rising edge trigger
-const int dataPin = 8;     // The pin to read the 16-bit word
+const int triggerPin = 3;   // The pin for the rising edge trigger
+const int syncPin = 2;      // The pin for the rising edge trigger
+const int dataPin = 8;      // The pin to read the 16-bit word
+const int checkPin = 9;     // The pin to check if the trigger has occurred
+
 
 // Variables
 volatile uint16_t receivedWord = 0;     // 16-bit word received
@@ -42,6 +45,9 @@ uint16_t samples[SAMPLE_SIZE] = {0};
 void setup() {
   pinMode(triggerPin, OUTPUT);
   pinMode(dataPin, INPUT);
+  pinMode(syncPin, INPUT);
+  pinMode(checkPin, OUTPUT);
+  attachInterrupt(digitalPinToInterrupt(syncPin), triggerInterrupt, RISING);     // Attach interrupt to the rising edge of the trigger pin
   startUpLCD();
   delay(5000);
 }
@@ -54,12 +60,12 @@ void loop() {
   for (int i = 0; i < SAMPLE_SIZE; i++) 
   {
     digitalWrite(triggerPin, LOW);
+    receivedWord = 0;
     delay(SAMPLE_RATE);
     digitalWrite(triggerPin, HIGH);
     // Wait after the trigger
     delayMicroseconds( DELAY_AFTER_TRIGGER);
     // Read the 16-bit word
-    receivedWord = 0;
     for (int i = WORD_SIZE; i >= 0; --i) 
     {
       // Set the corresponding bit in the word
@@ -155,6 +161,22 @@ void printDistance(uint16_t measuredDistance)
   lcd.print(String(measuredDistance, HEX));
 }
 
+// Interrupt service routine for the rising edge trigger
+void triggerInterrupt() 
+{
+  // Record the time of the trigger
+  digitalWrite(checkPin, HIGH); 
+  digitalWrite(checkPin, LOW); 
+
+  // Set the corresponding bit in the word
+  //receivedWord |= (digitalRead(dataPin) << i);
+  //Serial.println("triggerOccurred");
+}
 
 // End of Function Implementation
+
+
+
+
+
 
